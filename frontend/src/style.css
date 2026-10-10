@@ -1,0 +1,181 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    @apply bg-surface text-on-surface;
+  }
+  body {
+    font-family: 'Cairo', system-ui, sans-serif;
+    @apply text-body-md;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  :focus-visible {
+    outline: 3px solid #c9a227;
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: #b8efd1;
+    color: #002114;
+  }
+  html {
+    caret-color: #1f6f50;
+    accent-color: #1f6f50;
+    scrollbar-color: #bec9c1 transparent;
+  }
+  /* إحساس التطبيق: لمس سريع من غير تأخير، ومن غير تحديد نص بالغلط على الأزرار */
+  a,
+  button,
+  [role='tab'],
+  label {
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    line-height: 1;
+    user-select: none;
+  }
+  .icon-fill {
+    font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .card {
+    @apply rounded-2xl bg-surface-container-lowest shadow-card;
+  }
+
+  /* الأزرار — أقل ارتفاع 48px، والأساسية 56px */
+  .btn {
+    @apply inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl px-5 text-label-lg font-bold transition-all active:scale-98 disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-lg {
+    @apply min-h-[56px] px-6;
+  }
+  .btn-primary {
+    @apply bg-primary-container text-on-primary shadow-md hover:bg-forest;
+  }
+  .btn-outline {
+    @apply border-2 border-primary-container bg-surface-container-lowest text-primary-container hover:bg-surface-container-low;
+  }
+  .btn-danger {
+    @apply bg-error text-on-error shadow-md hover:opacity-90;
+  }
+  .btn-ghost {
+    @apply text-on-surface-variant hover:bg-surface-container hover:text-primary;
+  }
+  .btn-soft {
+    @apply bg-secondary-container text-on-secondary-fixed-variant hover:bg-secondary-fixed-dim;
+  }
+
+  /* الحقول — ارتفاع 50px والعنوان فوق الحقل دايمًا */
+  .field-label {
+    @apply mb-2 block text-label-lg font-semibold text-ink;
+  }
+  .field {
+    @apply block min-h-[50px] w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-4 text-body-md text-on-surface transition-colors placeholder:text-ink-muted focus:border-primary-container focus:outline-none focus:ring-2 focus:ring-gold/40;
+  }
+  .field-error {
+    @apply border-2 border-outflow;
+  }
+  .error-text {
+    @apply mt-1.5 flex items-center gap-1 text-body-sm font-semibold text-outflow-text;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border px-3 py-1 text-body-sm font-bold;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded-lg bg-surface-container-high;
+  }
+}
+
+/*
+ * صف أرقام بيتسحب أفقي على الموبايل (زي تطبيقات البنوك)، وبيرجع grid عادي من التابلت.
+ * استخدمه مع grid classes بـ md: prefix.
+ */
+@media (max-width: 767px) {
+  .mobile-scroller {
+    display: flex !important;
+    gap: 0.625rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    margin-inline: -0.75rem;
+    padding-inline: 0.75rem;
+    padding-bottom: 2px;
+    scrollbar-width: none;
+  }
+  .mobile-scroller::-webkit-scrollbar {
+    display: none;
+  }
+  .mobile-scroller > * {
+    flex: 0 0 auto;
+    min-width: 9.5rem;
+    scroll-snap-align: start;
+  }
+}
+
+/* انتقال الشاشات: دخول ناعم من غير ما يأخّر المستخدم */
+.page-enter-active {
+  transition:
+    opacity 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.page-leave-active {
+  transition: opacity 90ms ease-in;
+}
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+.page-leave-to {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-active,
+  .page-leave-active {
+    transition: none;
+  }
+  .page-enter-from {
+    transform: none;
+  }
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}

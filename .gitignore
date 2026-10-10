@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Environment variables & secrets
+.env
+.env.backup
+.env.production
+.env.local
+.env.*.local
+auth.json
+
+# Build outputs
+dist/
+dist-ssr/
+
+# Backend temporary / generated
+backend/storage/*.key
+backend/storage/pail
+backend/storage/framework/cache/data/*
+!backend/storage/framework/cache/data/.gitignore
+backend/storage/framework/sessions/*
+!backend/storage/framework/sessions/.gitignore
+backend/storage/framework/testing/*
+!backend/storage/framework/testing/.gitignore
+backend/storage/framework/views/*
+!backend/storage/framework/views/.gitignore
+backend/storage/logs/*
+!backend/storage/logs/.gitignore
+backend/public/hot
+backend/public/storage
+
+# Logs & caches
+*.log
+.phpunit.result.cache
+.phpunit.cache
+
+# IDE & Editor files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Archives
+stitch_.zip
