@@ -1,7 +1,7 @@
 -- ========================================================
 -- مسجدي - نظام إدارة مالية المسجد
 -- تصدير قاعدة البيانات الكاملة بصيغة MySQL / MariaDB
--- تاريخ التصدير: 2026-10-10 15:18:09
+-- تاريخ التصدير: 2026-10-10 15:31:07
 -- متوافق مع: MySQL 8.0+, MariaDB 10.4+, phpMyAdmin, Hostinger
 -- ========================================================
 
@@ -296,9 +296,9 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 
 -- تفريغ بيانات جدول `users` (3 سجلات)
 INSERT INTO `users` (`id`, `name`, `phone`, `email`, `email_verified_at`, `password`, `is_active`, `custodian_id`, `last_login_at`, `remember_token`, `created_at`, `updated_at`) VALUES
-(1, 'الشيخ أحمد', '01000000001', NULL, NULL, '$2y$12$5DsCKV9DSqZN1tTO3NVh4eDHcs6dIYdIm5TMMtIwcU9eEqX9CreJO', 1, 1, '2026-10-10 14:16:21', NULL, '2026-10-10 12:39:57', '2026-10-10 14:16:21'),
-(2, 'الحاج محمود', '01000000002', NULL, NULL, '$2y$12$femnB/AOvvIguTOm1s7xl.xLhMPLK0.XKfu2R/dWqqEQvehw4G6Ym', 1, 2, '2026-10-10 12:43:18', NULL, '2026-10-10 12:39:57', '2026-10-10 12:43:18'),
-(3, 'الأستاذ خالد', '01000000003', NULL, NULL, '$2y$12$kSxC1SNtLaFIDhGgSzcoPOtDJjb/fXUdi804yViPs3ikC5BW9Zk0C', 1, 3, '2026-10-10 14:00:58', NULL, '2026-10-10 12:39:58', '2026-10-10 14:00:58');
+(1, 'الشيخ أحمد', '01000000001', NULL, NULL, '$2y$12$poA5DnL2h7ZmH8kr1mzt8e3jF3bFumrg4EvfDzAXcuzWko8hB/F8O', 1, 1, '2026-10-10 14:16:21', NULL, '2026-10-10 12:39:57', '2026-10-10 15:29:25'),
+(2, 'الحاج محمود', '01000000002', NULL, NULL, '$2y$12$w0QJd/Lxxm5Y7PaqQ9Ep2eHeIcJQezsym5Wb9mhRTOgRcADw8bAca', 1, 2, '2026-10-10 12:43:18', NULL, '2026-10-10 12:39:57', '2026-10-10 15:29:25'),
+(3, 'الأستاذ خالد', '01000000003', NULL, NULL, '$2y$12$ByugNSqSJx0/h333uTJL0ejSd7BAr98n5xthKwbgcxO5wZXppE1KG', 1, 3, '2026-10-10 14:00:58', NULL, '2026-10-10 12:39:58', '2026-10-10 15:29:26');
 
 -- تفريغ بيانات جدول `sessions` (1 سجلات)
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
@@ -334,7 +334,7 @@ INSERT INTO `personal_access_tokens` (`id`, `tokenable_type`, `tokenable_id`, `n
 (18, 'App\\Models\\User', 3, 'app', '27477d4a8b62749fa2fe713bea44fd89a332b69c85d2f27be5abeff078227d98', '[\"*\"]', '2026-10-10 13:30:19', NULL, '2026-10-10 13:30:19', '2026-10-10 13:30:19'),
 (19, 'App\\Models\\User', 3, 'app', '1b62a9264c679be85e3279ff3b3e2283bcd6f86ca826e1cf4b6757049d2df84d', '[\"*\"]', '2026-10-10 13:31:12', NULL, '2026-10-10 13:31:07', '2026-10-10 13:31:12'),
 (20, 'App\\Models\\User', 3, 'app', '866042009c36c56233f7e9ab0ccfdbd8bdf0fde7dbd1ad57dfcb8be46e1bc9b0', '[\"*\"]', '2026-10-10 13:31:38', NULL, '2026-10-10 13:31:37', '2026-10-10 13:31:38'),
-(21, 'App\\Models\\User', 3, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/15', 'eea0cf91ab383dd405f5a855d47cf6cf1fe187a2669bf1c635a31b07904cb53f', '[\"*\"]', '2026-10-10 14:53:34', NULL, '2026-10-10 13:47:12', '2026-10-10 14:53:34'),
+(21, 'App\\Models\\User', 3, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/15', 'eea0cf91ab383dd405f5a855d47cf6cf1fe187a2669bf1c635a31b07904cb53f', '[\"*\"]', '2026-10-10 15:23:45', NULL, '2026-10-10 13:47:12', '2026-10-10 15:23:45'),
 (22, 'App\\Models\\User', 1, 'app', 'f8a53c83937ca2e4f7c034554a0fa772a4813c3bc00a812b8a9fad51208b7417', '[\"*\"]', '2026-10-10 13:57:51', NULL, '2026-10-10 13:57:37', '2026-10-10 13:57:51'),
 (23, 'App\\Models\\User', 3, 'app', '53a23da20d5da165b68e438b19af6cfd51d5e2c25462547fdf93a77eb461eac9', '[\"*\"]', '2026-10-10 14:00:58', NULL, '2026-10-10 14:00:58', '2026-10-10 14:00:58'),
 (24, 'App\\Models\\User', 1, 'app', 'fb4527e61f5c3ea4ffb3130e6ee4827bcd32c6f0fd3535a90ebed1907c2e14ef', '[\"*\"]', '2026-10-10 14:02:35', NULL, '2026-10-10 14:02:02', '2026-10-10 14:02:35'),

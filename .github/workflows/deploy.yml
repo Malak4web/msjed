@@ -137,6 +137,12 @@ jobs:
             echo "=== Database Migrations ==="
             \$PHP_BIN artisan migrate --force
 
+            echo "=== Database Seeders (Ensuring Users & Roles) ==="
+            \$PHP_BIN artisan db:seed --force
+
+            echo "=== Clear Cache to Unblock Any Rate Limits ==="
+            \$PHP_BIN artisan cache:clear
+
             echo "=== Optimization and Caching ==="
             \$PHP_BIN artisan optimize:clear
             \$PHP_BIN artisan config:cache

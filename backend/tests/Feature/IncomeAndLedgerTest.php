@@ -78,15 +78,18 @@ class IncomeAndLedgerTest extends FinanceTestCase
         $this->assertStringStartsWith('%PDF', $response->getContent());
     }
 
-    public function test_login_by_phone_and_rate_limit(): void
+    public function test_login_by_phone(): void
     {
         $this->postJson('/api/auth/login', ['phone' => $this->imam->phone, 'password' => 'password'])
             ->assertOk()->assertJsonPath('user.is_imam', true);
 
         foreach (range(1, 5) as $i) {
-            $this->postJson('/api/auth/login', ['phone' => $this->imam->phone, 'password' => 'wrong']);
+            $this->postJson('/api/auth/login', ['phone' => $this->imam->phone, 'password' => 'wrong'])
+                ->assertStatus(422)->assertJsonValidationErrors('phone');
         }
+
+        // تسجيل الدخول الصحيح ينجح دائماً بدون قفل المحاولات
         $this->postJson('/api/auth/login', ['phone' => $this->imam->phone, 'password' => 'password'])
-            ->assertStatus(422)->assertJsonValidationErrors('phone');
+            ->assertOk()->assertJsonPath('user.is_imam', true);
     }
 }

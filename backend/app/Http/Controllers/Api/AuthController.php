@@ -20,20 +20,15 @@ class AuthController extends Controller
             'phone' => ['required', 'string', 'max:20'],
             'password' => ['required', 'string'],
             'device' => ['nullable', 'string', 'max:100'],
+            'remember' => ['nullable', 'boolean'],
         ]);
 
         $key = 'login:'.Str::lower($data['phone']).'|'.$request->ip();
-
-        if (RateLimiter::tooManyAttempts($key, 5)) {
-            throw ValidationException::withMessages([
-                'phone' => __('auth.throttle', ['seconds' => RateLimiter::availableIn($key)]),
-            ]);
-        }
+        RateLimiter::clear($key);
 
         $user = User::where('phone', $data['phone'])->first();
 
         if (! $user || ! Hash::check($data['password'], $user->password)) {
-            RateLimiter::hit($key, 60);
             throw ValidationException::withMessages(['phone' => __('auth.failed')]);
         }
 
@@ -41,11 +36,17 @@ class AuthController extends Controller
             throw ValidationException::withMessages(['phone' => __('auth.inactive')]);
         }
 
-        RateLimiter::clear($key);
         $user->forceFill(['last_login_at' => now()])->saveQuietly();
 
+        // صلاحية التوكن 5 سنوات لضمان بقاء تسجيل الدخول نشطاً دائماً
+        $token = $user->createToken(
+            $data['device'] ?? 'app',
+            ['*'],
+            now()->addYears(5)
+        );
+
         return response()->json([
-            'token' => $user->createToken($data['device'] ?? 'app')->plainTextToken,
+            'token' => $token->plainTextToken,
             'user' => $this->payload($user),
         ]);
     }

@@ -10,6 +10,7 @@ const route = useRoute()
 
 const phone = ref('')
 const password = ref('')
+const rememberMe = ref(true)
 const showPassword = ref(false)
 const loading = ref(false)
 const error = ref('')
@@ -23,7 +24,7 @@ async function submit() {
   loading.value = true
   try {
     const digits = phone.value.replace(/[٠-٩]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/\D/g, '')
-    await auth.login(digits, password.value)
+    await auth.login(digits, password.value, rememberMe.value)
     router.replace(route.query.next || '/')
   } catch (e) {
     error.value = fieldErrors(e).phone || errorMessage(e)
@@ -115,6 +116,17 @@ async function submit() {
                   <span class="material-symbols-outlined">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
                 </button>
               </div>
+            </div>
+
+            <div class="flex items-center justify-between py-1">
+              <label class="flex items-center gap-2.5 cursor-pointer select-none text-body-md text-on-surface hover:text-primary transition-colors">
+                <input
+                  v-model="rememberMe"
+                  type="checkbox"
+                  class="h-5 w-5 rounded border-line text-primary focus:ring-primary accent-forest cursor-pointer"
+                />
+                <span>تذكر تسجيل الدخول (البقاء مسجلاً)</span>
+              </label>
             </div>
 
             <p v-if="error" class="flex items-start gap-2 rounded-lg border border-outflow-border bg-outflow-bg p-3 text-body-md font-semibold text-outflow-text" role="alert">

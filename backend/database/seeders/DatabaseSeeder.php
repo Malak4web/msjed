@@ -14,7 +14,11 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesAndPermissionsSeeder::class,
             LookupsSeeder::class,
-            DemoDataSeeder::class,
+            DefaultUsersSeeder::class,
         ]);
+
+        if (\App\Models\ExpenseRequest::count() === 0 && \App\Models\Income::count() === 0) {
+            $this->call(DemoDataSeeder::class);
+        }
     }
 }

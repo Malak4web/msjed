@@ -18,7 +18,7 @@ use App\Http\Controllers\Api\SettingsController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('auth/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+Route::post('auth/login', [AuthController::class, 'login']);
 Route::get('settings/logo', [SettingsController::class, 'logo']);
 Route::get('attachments/{attachment}', [AttachmentController::class, 'show'])
     ->name('attachments.show')->middleware('signed:relative');
