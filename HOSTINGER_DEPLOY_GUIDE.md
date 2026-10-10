@@ -68,7 +68,7 @@
 
 1. **إصدار PHP:**
    - توجه في hPanel إلى **Advanced** ← **PHP Configuration**.
-   - اختر **PHP 8.3** (حيث أن Laravel 13 يتطلب PHP 8.3 على الأقل) واضغط **Save**.
+   - اختر **PHP 8.4** (حيث أن حزم المشروع المقفلة في `composer.lock` مثل Symfony 8.1 و Activitylog تتطلب PHP 8.4 على الأقل) واضغط **Save**.
 
 2. **قاعدة البيانات (MySQL):**
    - أنشئ قاعدة بيانات ومستخدم وكلمة سر من قسم **Databases** ← **Management**.
