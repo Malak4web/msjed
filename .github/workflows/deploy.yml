@@ -67,7 +67,9 @@ jobs:
         run: |
           sshpass -e rsync -avz --delete \
             --exclude='.env' \
-            --exclude='.env.*' \
+            --exclude='.env.local' \
+            --exclude='.env.production' \
+            --exclude='.env.backup' \
             --exclude='.git' \
             --exclude='.github' \
             --exclude='storage/app/private/*' \
@@ -110,10 +112,23 @@ jobs:
             mkdir -p storage/logs storage/app/private storage/app/backups bootstrap/cache
             chmod -R 775 storage bootstrap/cache
 
+            # Ensure sqlite file exists if using sqlite database
+            mkdir -p database
+            touch database/database.sqlite 2>/dev/null || true
+
             if [ ! -f .env ]; then
-              echo "Notice: .env not found on server, creating initial from .env.example..."
-              cp .env.example .env
-              \$PHP_BIN artisan key:generate --force
+              if [ -f .env.example ]; then
+                echo "Notice: .env not found on server, creating initial from .env.example..."
+                cp .env.example .env
+                \$PHP_BIN artisan key:generate --force
+              else
+                echo "Warning: .env.example not found, creating basic .env..."
+                echo "APP_NAME=Laravel" > .env
+                echo "APP_ENV=production" >> .env
+                echo "APP_DEBUG=false" >> .env
+                echo "DB_CONNECTION=sqlite" >> .env
+                \$PHP_BIN artisan key:generate --force
+              fi
             fi
 
             echo "=== Storage Link ==="
