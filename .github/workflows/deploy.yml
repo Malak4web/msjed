@@ -38,7 +38,9 @@ jobs:
       - name: 📦 Install Backend Dependencies (Composer)
         run: |
           cd backend
+          cp .env.example .env
           composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+          rm -f .env
 
       - name: 🔐 Setup SSH and Tools
         run: |
