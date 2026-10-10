@@ -1,0 +1,14 @@
+# ----------------------------------------------------------------------
+# Root .htaccess for Hostinger Shared Hosting (Laravel)
+# ----------------------------------------------------------------------
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Prevent direct access to sensitive folders and files
+    RewriteRule ^(\.env|\.git|storage|vendor|bootstrap|app|config|database|resources|routes) - [F,L]
+
+    # Send Requests to Public Directory
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

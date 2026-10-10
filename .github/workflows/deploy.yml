@@ -1,0 +1,120 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy to Hostinger Shared Hosting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: 📦 Build Frontend (Vue 3 -> Laravel Public)
+        run: |
+          cd frontend
+          npm ci
+          npm run build:laravel
+
+      - name: 🐘 Setup PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, pdo_sqlite, bcmath, gd, zip, fileinfo, gmp
+          coverage: none
+
+      - name: 📦 Install Backend Dependencies (Composer)
+        run: |
+          cd backend
+          composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+      - name: 🔐 Setup SSH and Tools
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y sshpass rsync
+
+      - name: 📁 Ensure Remote Directory Exists
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USERNAME }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '65002' }}
+          TARGET_DIR: ${{ secrets.SSH_TARGET_DIR }}
+        run: |
+          sshpass -e ssh -p "$SSH_PORT" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$SSH_USER@$SSH_HOST" "mkdir -p $TARGET_DIR"
+
+      - name: 🚀 Sync Files to Hostinger (rsync)
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USERNAME }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '65002' }}
+          TARGET_DIR: ${{ secrets.SSH_TARGET_DIR }}
+        run: |
+          sshpass -e rsync -avz --delete \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='storage/app/private/*' \
+            --exclude='storage/app/backups/*' \
+            --exclude='storage/logs/*' \
+            --exclude='database/*.sqlite' \
+            --exclude='database/*.sqlite-journal' \
+            --exclude='tests' \
+            --exclude='phpunit.xml' \
+            -e "ssh -p $SSH_PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+            backend/ "$SSH_USER@$SSH_HOST:$TARGET_DIR/"
+
+      - name: ⚡ Run Post-Deployment Commands on Hostinger
+        env:
+          SSHPASS: ${{ secrets.SSH_PASSWORD }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USERNAME }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '65002' }}
+          TARGET_DIR: ${{ secrets.SSH_TARGET_DIR }}
+        run: |
+          sshpass -e ssh -p "$SSH_PORT" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "$SSH_USER@$SSH_HOST" "bash -s" << EOF
+            set -e
+            cd "$TARGET_DIR"
+
+            echo "=== Hostinger PHP CLI Version ==="
+            php -v
+
+            echo "=== Ensuring Storage and Cache Directories ==="
+            mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/framework/testing
+            mkdir -p storage/logs storage/app/private storage/app/backups bootstrap/cache
+            chmod -R 775 storage bootstrap/cache
+
+            if [ ! -f .env ]; then
+              echo "Notice: .env not found on server, creating initial from .env.example..."
+              cp .env.example .env
+              php artisan key:generate --force
+            fi
+
+            echo "=== Storage Link ==="
+            php artisan storage:link || true
+
+            echo "=== Database Migrations ==="
+            php artisan migrate --force
+
+            echo "=== Optimization and Caching ==="
+            php artisan optimize:clear
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+
+            echo "=== Deployment Completed Successfully! ==="
+          EOF
