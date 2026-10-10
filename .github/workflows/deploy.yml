@@ -39,7 +39,7 @@ jobs:
         run: |
           cd backend
           cp .env.example .env
-          composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+          composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --ignore-platform-reqs
           rm -f .env
 
       - name: 🔐 Setup SSH and Tools

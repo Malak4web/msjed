@@ -2,6 +2,11 @@
 # Root .htaccess for Hostinger Shared Hosting (Laravel)
 # ----------------------------------------------------------------------
 
+# Force PHP 8.4 on Hostinger (LiteSpeed)
+<FilesMatch "\.(php|phtml)$">
+    SetHandler application/x-lsphp84
+</FilesMatch>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
