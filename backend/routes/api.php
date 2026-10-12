@@ -35,6 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('push/key', [NotificationController::class, 'pushKey']);
     Route::post('push/subscribe', [NotificationController::class, 'subscribe']);
     Route::post('push/unsubscribe', [NotificationController::class, 'unsubscribe']);
+    Route::post('push/test', [NotificationController::class, 'test'])->middleware('throttle:6,1');
 
     // الأشخاص حاملي العهد
     Route::get('custodians', [CustodianController::class, 'index']);
@@ -98,7 +99,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('users', [UserController::class, 'index']);
         Route::post('users', [UserController::class, 'store']);
+        Route::get('users/{user}', [UserController::class, 'show']);
         Route::put('users/{user}', [UserController::class, 'update']);
+        Route::delete('users/{user}', [UserController::class, 'destroy']);
+        Route::post('users/{user}/impersonate', [UserController::class, 'impersonate']);
 
         Route::get('permissions', [PermissionController::class, 'index']);
         Route::put('permissions', [PermissionController::class, 'update']);

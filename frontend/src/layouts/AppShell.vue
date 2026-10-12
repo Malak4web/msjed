@@ -63,6 +63,12 @@ async function logout() {
     router.replace({ name: 'login' })
   }
 }
+
+async function returnToImam() {
+  await auth.stopImpersonation()
+  ui.success('تمت العودة لحساب الإمام بنجاح')
+  router.push({ path: '/settings', query: { tab: 'users' } })
+}
 </script>
 
 <template>
@@ -120,10 +126,31 @@ async function logout() {
       </div>
     </aside>
 
+    <!-- شريط تنبيه محاكاة تسجيل الدخول (Impersonation Banner) -->
+    <div
+      v-if="auth.isImpersonating"
+      class="no-print fixed inset-x-0 top-0 z-[60] flex h-11 items-center justify-between gap-2 border-b border-amber-300 bg-amber-600 px-3 text-white shadow-sm md:sticky md:z-30 md:mr-rail md:px-6 xl:mr-sidebar"
+      role="alert"
+    >
+      <div class="flex min-w-0 items-center gap-2 text-label-md font-bold">
+        <span class="material-symbols-outlined shrink-0 text-[20px] text-amber-100">switch_account</span>
+        <p class="truncate text-label-sm sm:text-label-md">
+          تتصفح حالياً بحساب: <strong class="underline decoration-white/70">{{ auth.user?.name }}</strong> ({{ auth.user?.role_label }})
+        </p>
+      </div>
+      <button
+        class="flex shrink-0 items-center gap-1 rounded-lg bg-white px-2.5 py-1 text-label-sm font-bold text-amber-900 shadow-sm transition-all hover:bg-amber-50 active:scale-95"
+        @click="returnToImam"
+      >
+        <span class="material-symbols-outlined text-[16px]">undo</span>
+        <span class="whitespace-nowrap">العودة لحساب الإمام</span>
+      </button>
+    </div>
+
     <!-- هيدر الموبايل: الشاشات الرئيسية = هوية المسجد، والداخلية = رجوع + عنوان الشاشة -->
     <header
-      class="pt-safe no-print fixed inset-x-0 top-0 z-50 bg-surface/90 backdrop-blur-xl transition-shadow duration-200 md:hidden"
-      :class="scrolled ? 'shadow-[0_1px_8px_rgba(30,41,34,0.08)]' : ''"
+      class="pt-safe no-print fixed inset-x-0 z-50 bg-surface/90 backdrop-blur-xl transition-shadow duration-200 md:hidden"
+      :class="[scrolled ? 'shadow-[0_1px_8px_rgba(30,41,34,0.08)]' : '', auth.isImpersonating ? 'top-11' : 'top-0']"
     >
       <div v-if="!isTab" class="flex h-14 items-center gap-1 px-1.5">
         <button class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface active:bg-surface-container" aria-label="رجوع" @click="goBack">
@@ -170,8 +197,12 @@ async function logout() {
 
     <!-- المحتوى -->
     <main
-      class="relative px-space-sm md:mr-rail md:px-gutter md:pb-10 md:pt-8 xl:mr-sidebar xl:px-margin"
-      :class="[isTab ? 'pt-[5.25rem]' : 'pt-[4.5rem]', route.meta.hideTabBar ? 'pb-8' : 'pb-28']"
+      class="relative px-space-sm md:mr-rail md:px-gutter md:pb-10 xl:mr-sidebar xl:px-margin"
+      :class="[
+        isTab ? (auth.isImpersonating ? 'pt-[8rem]' : 'pt-[5.25rem]') : (auth.isImpersonating ? 'pt-[7.25rem]' : 'pt-[4.5rem]'),
+        auth.isImpersonating ? 'md:pt-4' : 'md:pt-8',
+        route.meta.hideTabBar ? 'pb-8' : 'pb-28'
+      ]"
     >
       <div class="mx-auto w-full max-w-[1600px]">
         <RouterView v-slot="{ Component, route: r }">

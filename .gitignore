@@ -47,5 +47,9 @@ Thumbs.db
 *.sln
 *.sw?
 
-# Archives
+# Archives & binaries
 stitch_.zip
+*.exe
+/tools/
+/*.pdf
+/zadians-stamp*.png

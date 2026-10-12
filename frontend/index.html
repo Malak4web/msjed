@@ -7,9 +7,26 @@
     <meta name="theme-color" content="#1f6f50" />
     <meta name="description" content="نظام العهد والمالية لمسجد خالد بن الوليد" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <!-- آيفون: يفتح كتطبيق مستقل من الشاشة الرئيسية (شرط إشعارات Push على iOS 16.4+) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="حسابات المسجد" />
     <!-- الخطوط والأيقونات مستضافة محليًا في public/fonts (src/fonts.css) — شوف scripts/fetch-fonts.sh -->
     <link rel="preload" href="/fonts/f4.woff2" as="font" type="font/woff2" crossorigin />
     <title>حسابات مسجد خالد بن الوليد</title>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          for (var r of regs) { r.unregister(); }
+        });
+      }
+      if ('caches' in window) {
+        caches.keys().then(function (keys) {
+          for (var k of keys) { caches.delete(k); }
+        });
+      }
+    </script>
   </head>
   <body>
     <div id="app"></div>

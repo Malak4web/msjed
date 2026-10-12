@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\PushSubscription;
+use App\Notifications\Channels\WebPushChannel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
@@ -41,9 +42,12 @@ class NotificationController extends Controller
     }
 
     /** المفتاح العام اللي المتصفح محتاجه عشان يشترك في الـ Push */
-    public function pushKey(): JsonResponse
+    public function pushKey(Request $request): JsonResponse
     {
-        return response()->json(['key' => config('services.webpush.public_key')]);
+        return response()->json([
+            'key' => config('services.webpush.public_key'),
+            'devices' => PushSubscription::where('user_id', $request->user()->id)->count(),
+        ]);
     }
 
     public function subscribe(Request $request): JsonResponse
@@ -63,6 +67,35 @@ class NotificationController extends Controller
         ]);
 
         return response()->json(['message' => 'تم تفعيل الإشعارات على الجهاز ده'], 201);
+    }
+
+    /** إشعار تجريبي لكل أجهزة المستخدم — بيرجّع نتيجة كل جهاز عشان نعرف المشكلة فين بالظبط */
+    public function test(Request $request): JsonResponse
+    {
+        $subs = PushSubscription::where('user_id', $request->user()->id)->get();
+
+        if ($subs->isEmpty()) {
+            return response()->json([
+                'message' => 'مفيش أي جهاز مفعّل عليه الإشعارات لحسابك. اضغط "تفعيل" من الموبايل الأول.',
+                'devices' => 0,
+                'results' => [],
+            ], 422);
+        }
+
+        $results = WebPushChannel::deliver($subs, [
+            'title' => 'إشعار تجريبي ✓',
+            'body' => 'تمام! الإشعارات شغالة على الجهاز ده — '.now()->format('H:i'),
+            'url' => '/notifications',
+            'tag' => 'test-'.now()->timestamp,
+        ]);
+
+        $ok = collect($results)->where('ok', true)->count();
+
+        return response()->json([
+            'message' => $ok ? "اتبعت لـ {$ok} من ".count($results).' جهاز. لو موصلش خلال ثواني، راجع إعدادات الإشعارات في الموبايل.' : 'الإرسال فشل لكل الأجهزة — شوف السبب تحت.',
+            'devices' => count($results),
+            'results' => $results,
+        ], $ok ? 200 : 502);
     }
 
     public function unsubscribe(Request $request): JsonResponse

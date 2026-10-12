@@ -43,6 +43,19 @@ class NotificationsTest extends FinanceTestCase
         $this->assertSame(0, PushSubscription::count());
     }
 
+    public function test_push_test_endpoint_reports_missing_devices_and_per_device_results(): void
+    {
+        $this->actingAsUser($this->imam)->postJson('/api/push/test')
+            ->assertStatus(422)->assertJsonPath('devices', 0);
+
+        PushSubscription::create(['user_id' => $this->imam->id, 'endpoint' => 'https://invalid.invalid/push', 'public_key' => 'bad', 'auth_token' => 'bad']);
+
+        $this->actingAsUser($this->imam)->postJson('/api/push/test')
+            ->assertStatus(502)
+            ->assertJsonPath('devices', 1)
+            ->assertJsonPath('results.0.ok', false);
+    }
+
     public function test_failed_push_does_not_break_the_request_flow(): void
     {
         PushSubscription::create(['user_id' => $this->imam->id, 'endpoint' => 'https://invalid.invalid/push', 'public_key' => 'bad', 'auth_token' => 'bad']);

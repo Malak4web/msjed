@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import api, { errorMessage } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { usePush } from '@/composables/usePush'
+import PushCard from '@/components/PushCard.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import { ago } from '@/utils/format'
@@ -12,7 +12,6 @@ import { ago } from '@/utils/format'
 const auth = useAuthStore()
 const ui = useUiStore()
 const router = useRouter()
-const push = usePush()
 
 const items = ref([])
 const loading = ref(true)
@@ -39,10 +38,7 @@ async function load(more = false) {
     loading.value = false
   }
 }
-onMounted(() => {
-  load()
-  push.refresh()
-})
+onMounted(load)
 
 async function open(n) {
   if (!n.read) {
@@ -62,16 +58,6 @@ async function readAll() {
   }
 }
 
-async function togglePush() {
-  if (push.enabled.value) {
-    await push.disable()
-    ui.success('الإشعارات اتوقفت على الجهاز ده.')
-    return
-  }
-  const error = await push.enable()
-  error ? ui.error(error) : ui.success('تمام! هيوصلك إشعار على الجهاز ده أول ما يحصل جديد.')
-}
-
 function more() {
   page.value++
   load(true)
@@ -88,19 +74,8 @@ function more() {
       </template>
     </PageHeader>
 
-    <!-- تفعيل Push -->
-    <div v-if="push.supported" class="card mb-4 flex items-center gap-3 border border-line p-4">
-      <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl" :class="push.enabled.value ? 'bg-inflow-bg text-inflow-text' : 'bg-secondary-container text-on-secondary-fixed-variant'">
-        <span class="material-symbols-outlined icon-fill">notifications</span>
-      </span>
-      <div class="flex-1">
-        <p class="font-bold">{{ push.enabled.value ? 'الإشعارات شغالة على الجهاز ده' : 'فعّل الإشعارات على الجهاز ده' }}</p>
-        <p class="text-body-sm text-on-surface-variant">يوصلك تنبيه على الموبايل حتى لو التطبيق مقفول.</p>
-      </div>
-      <button class="btn" :class="push.enabled.value ? 'btn-ghost bg-surface-container' : 'btn-primary'" :disabled="push.busy.value" @click="togglePush">
-        {{ push.enabled.value ? 'إيقاف' : 'تفعيل' }}
-      </button>
-    </div>
+    <!-- إشعارات الموبايل: الحالة الحقيقية + تفعيل + إشعار تجريبي -->
+    <PushCard class="mb-4" />
 
     <div v-if="loading && !items.length" class="space-y-2"><div v-for="i in 4" :key="i" class="skeleton h-20"></div></div>
     <ul v-else-if="items.length" class="card divide-y divide-line overflow-hidden border border-line">

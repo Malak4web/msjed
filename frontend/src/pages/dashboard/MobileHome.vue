@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useMetaStore } from '@/stores/meta'
 import PersonAvatar from '@/components/PersonAvatar.vue'
+import PushCard from '@/components/PushCard.vue'
 import { num, hijri, today, ago, toDate } from '@/utils/format'
 
 /**
@@ -59,6 +60,9 @@ function when(r) {
         <span class="mt-0.5 text-label-sm text-on-surface-variant">{{ isFriday ? 'الجمعة المباركة' : weekday }}</span>
       </div>
     </section>
+
+    <!-- تفعيل إشعارات الموبايل (بيظهر بس لو مش مفعّلة) -->
+    <PushCard compact />
 
     <!-- رصيدي المتاح في العهدة -->
     <section class="relative overflow-hidden rounded-xl bg-primary-container p-space-md text-on-primary shadow-md">

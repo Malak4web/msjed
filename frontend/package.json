@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:laravel": "vite build --outDir ../backend/public --emptyOutDir false",
+    "build:laravel": "node scripts/build-laravel.mjs",
     "fonts": "bash scripts/fetch-fonts.sh",
     "preview": "vite preview"
   },
