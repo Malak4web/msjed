@@ -126,7 +126,7 @@ async function impersonateUser(user) {
     title: `تسجيل الدخول بحساب ${user.name}؟`,
     message: `سيتم تحويل الجلسة إلى حساب (${user.name}) لتجربة النظام بصلاحياته ودوره (${user.role_label}). يمكنك العودة لحساب الإمام في أي وقت من الشريط العلوي.`,
     confirmText: 'تسجيل الدخول بالحساب',
-    icon: 'switch_account',
+    icon: 'login',
   })
 
   if (!ok) return
@@ -175,13 +175,13 @@ async function saveMatrix() {
 
       <DataTable :columns="columns" :rows="users" :loading="loading" clickable @row-click="openForm">
         <template #cell-name="{ row }">
-          <span class="flex items-center gap-3">
+          <div class="flex items-center gap-3">
             <PersonAvatar :name="row.name" :id="row.id" size="sm" />
-            <div>
-              <b class="text-on-surface">{{ row.name }}</b>
-              <span v-if="row.id === auth.user?.id" class="mr-2 inline-block rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">حسابك الحالي</span>
+            <div class="flex items-center gap-2">
+              <b class="text-on-surface whitespace-nowrap">{{ row.name }}</b>
+              <span v-if="row.id === auth.user?.id" class="inline-flex items-center rounded-md bg-forest/10 px-2 py-0.5 text-[11px] font-bold text-forest whitespace-nowrap">حسابك</span>
             </div>
-          </span>
+          </div>
         </template>
         <template #cell-phone="{ row }"><span dir="ltr">{{ row.phone }}</span></template>
         <template #cell-role="{ row }">{{ row.role_label }}</template>
@@ -192,34 +192,34 @@ async function saveMatrix() {
         <!-- إجراءات الصف -->
         <template #cell-actions="{ row }">
           <div class="flex items-center justify-end gap-1.5" @click.stop>
-            <!-- زر تسجيل الدخول بالحساب لإمام المسجد -->
+            <!-- زر الدخول بالحساب لإمام المسجد -->
             <button
               v-if="auth.isImam && row.id !== auth.user?.id"
-              class="inline-flex h-9 items-center gap-1 rounded-lg border border-amber-600/30 bg-amber-50 px-2.5 text-label-sm font-bold text-amber-900 transition-colors hover:border-amber-600 hover:bg-amber-100 active:scale-95"
+              class="inline-flex h-8 items-center gap-1.5 rounded-lg bg-secondary-container px-2.5 text-label-sm font-bold text-on-secondary-fixed-variant transition-all hover:opacity-90 active:scale-95"
               title="تسجيل الدخول بهذا الحساب"
               @click="impersonateUser(row)"
             >
-              <span class="material-symbols-outlined text-[18px]">switch_account</span>
-              <span class="hidden xl:inline">دخول بالحساب</span>
+              <span class="material-symbols-outlined text-[18px]">login</span>
+              <span class="whitespace-nowrap">دخول بالحساب</span>
             </button>
 
             <!-- زر التعديل -->
             <button
-              class="flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container active:scale-95"
+              class="flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container active:scale-95"
               title="تعديل المستخدم"
               @click="openForm(row)"
             >
-              <span class="material-symbols-outlined text-[20px]">edit</span>
+              <span class="material-symbols-outlined text-[18px]">edit</span>
             </button>
 
             <!-- زر الحذف -->
             <button
               v-if="row.id !== auth.user?.id"
-              class="flex h-9 w-9 items-center justify-center rounded-lg text-error transition-colors hover:bg-error-container/30 active:scale-95"
+              class="flex h-8 w-8 items-center justify-center rounded-lg text-outline transition-colors hover:bg-error-container/30 hover:text-error active:scale-95"
               title="حذف المستخدم"
               @click="deleteUser(row)"
             >
-              <span class="material-symbols-outlined text-[20px]">delete</span>
+              <span class="material-symbols-outlined text-[18px]">delete</span>
             </button>
           </div>
         </template>
@@ -231,7 +231,7 @@ async function saveMatrix() {
             <div class="flex-1">
               <div class="flex items-center gap-2">
                 <p class="font-bold">{{ row.name }}</p>
-                <span v-if="row.id === auth.user?.id" class="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">حسابك</span>
+                <span v-if="row.id === auth.user?.id" class="rounded-md bg-forest/10 px-1.5 py-0.5 text-[10px] font-bold text-forest">حسابك</span>
               </div>
               <p class="text-body-sm text-on-surface-variant">{{ row.role_label }} · <span dir="ltr">{{ row.phone }}</span></p>
               <p v-if="row.custodian" class="text-label-sm text-tertiary">عهدة: {{ row.custodian.name }}</p>
@@ -242,10 +242,10 @@ async function saveMatrix() {
           <div class="mt-3 flex items-center justify-end gap-2 border-t border-line/60 pt-2.5" @click.stop>
             <button
               v-if="auth.isImam && row.id !== auth.user?.id"
-              class="inline-flex h-8 items-center gap-1 rounded-lg border border-amber-600/30 bg-amber-50 px-2.5 text-label-sm font-bold text-amber-900 active:bg-amber-100"
+              class="inline-flex h-8 items-center gap-1 rounded-lg bg-secondary-container px-2.5 text-label-sm font-bold text-on-secondary-fixed-variant active:opacity-80"
               @click="impersonateUser(row)"
             >
-              <span class="material-symbols-outlined text-[16px]">switch_account</span>
+              <span class="material-symbols-outlined text-[16px]">login</span>
               <span>دخول بالحساب</span>
             </button>
             <button
@@ -314,18 +314,18 @@ async function saveMatrix() {
     <AppDrawer v-model="drawer" :title="editing ? `تعديل ${editing.name}` : 'إضافة مستخدم'" subtitle="المستخدم بيدخل برقم الموبايل وكلمة المرور">
       <div class="space-y-5">
         <!-- كارت محاكاة الحساب للإمام -->
-        <div v-if="editing && auth.isImam && editing.id !== auth.user?.id" class="rounded-xl border border-amber-300 bg-amber-50 p-4">
+        <div v-if="editing && auth.isImam && editing.id !== auth.user?.id" class="rounded-xl border border-secondary-container bg-surface-container-low p-4">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p class="flex items-center gap-1.5 font-bold text-amber-950">
-                <span class="material-symbols-outlined text-[20px] text-amber-700">switch_account</span>
+              <p class="flex items-center gap-1.5 font-bold text-on-surface">
+                <span class="material-symbols-outlined text-[20px] text-primary">login</span>
                 تسجيل الدخول بحساب {{ editing.name }}
               </p>
-              <p class="text-body-sm text-amber-900/80">التبديل الفوري لتجربة واستخدام النظام بصلاحيات ودور هذا الحساب.</p>
+              <p class="text-body-sm text-on-surface-variant">التبديل الفوري لتجربة واستخدام النظام بصلاحيات ودور هذا الحساب.</p>
             </div>
             <button
               type="button"
-              class="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-label-md font-bold text-white shadow-sm transition-all hover:bg-amber-700 active:scale-95"
+              class="btn btn-primary min-h-[40px] px-3.5 py-1.5 text-label-sm"
               @click="impersonateUser(editing)"
             >
               <span class="material-symbols-outlined text-[18px]">login</span>

@@ -133,7 +133,7 @@ async function returnToImam() {
       role="alert"
     >
       <div class="flex min-w-0 items-center gap-2 text-label-md font-bold">
-        <span class="material-symbols-outlined shrink-0 text-[20px] text-amber-100">switch_account</span>
+        <span class="material-symbols-outlined shrink-0 text-[20px] text-amber-100">login</span>
         <p class="truncate text-label-sm sm:text-label-md">
           تتصفح حالياً بحساب: <strong class="underline decoration-white/70">{{ auth.user?.name }}</strong> ({{ auth.user?.role_label }})
         </p>
