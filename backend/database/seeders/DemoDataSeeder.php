@@ -139,21 +139,23 @@ class DemoDataSeeder extends Seeder
             ], $imam));
 
             // ── تسليم فلوس بين الأشخاص
-            $this->as($at(2, 19), fn () => $transfers->create([
+            $t1 = $this->as($at(2, 19), fn () => $transfers->create([
                 'date' => $at(2)->toDateString(),
                 'from_custodian_id' => $mahmoudC->id,
                 'to_custodian_id' => $khaledC->id,
                 'amount' => 6000,
                 'notes' => 'لدفع المرتبات',
             ], $mahmoud));
+            $this->as($at(2, 20), fn () => $transfers->accept($t1, $khaled));
 
-            $this->as($at(9, 19), fn () => $transfers->create([
+            $t2 = $this->as($at(9, 19), fn () => $transfers->create([
                 'date' => $at(9)->toDateString(),
                 'from_custodian_id' => $mahmoudC->id,
                 'to_custodian_id' => $sayedC->id,
                 'amount' => 1000,
                 'notes' => 'مصاريف نثرية',
             ], $mahmoud));
+            $this->as($at(9, 20), fn () => $transfers->accept($t2, $imam));
 
             // ── المصروفات الثابتة
             $this->as($month->copy(), fn () => $recurring->generateForMonth($month));

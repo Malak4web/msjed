@@ -6,6 +6,7 @@ use App\Exceptions\BusinessRuleException;
 use App\Models\Custodian;
 use App\Models\ExpenseRequest;
 use App\Models\LedgerEntry;
+use App\Models\Transfer;
 use App\Support\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -59,15 +60,19 @@ class LedgerService
         return Money::cents(LedgerEntry::where('custodian_id', $custodianId)->sum('amount'));
     }
 
-    /** المبالغ المحجوزة = طلبات اتوافق عليها ولسه متنفذتش */
+    /** المبالغ المحجوزة = طلبات اتوافق عليها ولسه متنفذتش + تحويلات عهدة قيد الانتظار لم يستلمها المستلم */
     public function reservedCents(int $custodianId, ?int $exceptRequestId = null): int
     {
-        return Money::cents(
-            ExpenseRequest::where('custodian_id', $custodianId)
-                ->where('status', ExpenseRequest::APPROVED)
-                ->when($exceptRequestId, fn ($q) => $q->where('id', '!=', $exceptRequestId))
-                ->sum('amount')
-        );
+        $expenses = ExpenseRequest::where('custodian_id', $custodianId)
+            ->where('status', ExpenseRequest::APPROVED)
+            ->when($exceptRequestId, fn ($q) => $q->where('id', '!=', $exceptRequestId))
+            ->sum('amount');
+
+        $pendingTransfers = Transfer::where('from_custodian_id', $custodianId)
+            ->where('status', Transfer::STATUS_PENDING)
+            ->sum('amount');
+
+        return Money::cents($expenses) + Money::cents($pendingTransfers);
     }
 
     public function availableCents(int $custodianId, ?int $exceptRequestId = null): int

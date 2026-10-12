@@ -15,6 +15,8 @@ const map = {
   returned: ['bg-tertiary-fixed text-on-tertiary-fixed-variant border-tertiary-fixed-dim', 'undo', 'مُرجَع للتعديل'],
   cancelled: ['bg-surface-container text-on-surface-variant border-outline-variant', 'block', 'مُلغى'],
   reversed: ['bg-outflow-bg text-outflow-text border-outflow-border', 'history', 'ملغى بقيد عكسي'],
+  completed: ['bg-inflow-bg text-inflow-text border-inflow-border', 'task_alt', 'تم الاستلام'],
+  transfer_pending: ['bg-pending-bg text-pending-text border-pending-border', 'schedule', 'بانتظار الاستلام'],
   due: ['bg-pending-bg text-pending-text border-pending-border', 'schedule', 'مستحق'],
   overdue: ['bg-outflow-bg text-outflow-text border-outflow-border', 'warning', 'متأخر'],
   paid: ['bg-inflow-bg text-inflow-text border-inflow-border', 'check_circle', 'مدفوع'],

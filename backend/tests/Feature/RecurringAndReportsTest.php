@@ -63,9 +63,11 @@ class RecurringAndReportsTest extends FinanceTestCase
     {
         $this->addIncome($this->mahmoud, 1000, now()->subMonthNoOverflow()->startOfMonth()->toDateString());
         $this->addIncome($this->mahmoud, 500);
-        $this->actingAsUser($this->treasurer)->postJson('/api/transfers', [
+        $res = $this->actingAsUser($this->treasurer)->postJson('/api/transfers', [
             'from_custodian_id' => $this->mahmoud->id, 'to_custodian_id' => $this->sayed->id, 'amount' => 300, 'date' => now()->toDateString(),
         ])->assertCreated();
+        $transferId = $res->json('data.id');
+        $this->actingAsUser($this->imam)->postJson("/api/transfers/{$transferId}/accept")->assertOk();
 
         $from = now()->startOfMonth()->toDateString();
         $s = $this->actingAsUser($this->treasurer)->getJson("/api/custodians/{$this->mahmoud->id}/statement?from={$from}")->assertOk();

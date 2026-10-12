@@ -44,6 +44,8 @@ async function load() {
 onMounted(load)
 watch(page, load)
 
+const pendingForMe = computed(() => rows.value.filter((r) => r.can_accept))
+
 const from = computed(() => people.value.find((p) => p.id === form.from_custodian_id))
 const to = computed(() => people.value.find((p) => p.id === form.to_custodian_id))
 const amount = computed(() => Number(form.amount) || 0)
@@ -66,9 +68,9 @@ async function submit() {
   if (Object.keys(e).length) return
 
   const ok = await ui.ask({
-    title: 'تأكيد تسليم الفلوس',
-    message: `${from.value.name} هيسلّم ${money(amount.value)} لـ ${to.value.name}.`,
-    confirmText: 'تأكيد التسليم',
+    title: 'تأكيد إرسال العهدة',
+    message: `هيتم حجز ${money(amount.value)} من رصيد ${from.value.name} ومش هيتضاف لـ ${to.value.name} إلا بعد موافقته على استلام العهدة.`,
+    confirmText: 'إرسال للمستلم',
     icon: 'swap_horiz',
   })
   if (!ok) return
@@ -87,6 +89,67 @@ async function submit() {
     ui.error(errorMessage(err))
   } finally {
     saving.value = false
+  }
+}
+
+async function acceptTransfer(row) {
+  const ok = await ui.ask({
+    title: `تأكيد استلام عهدة ${row.number}`,
+    message: `هل استلمت بالفعل مبلغ ${money(row.amount)} من ${row.from.name}؟ هيتم إضافة المبلغ لرصيدك فورًا.`,
+    confirmText: 'تأكيد الاستلام',
+    icon: 'task_alt',
+  })
+  if (!ok) return
+  try {
+    const { data } = await api.post(`/transfers/${row.id}/accept`)
+    ui.success(data.message)
+    ui.changed()
+    meta.load(true)
+    load()
+  } catch (e) {
+    ui.error(errorMessage(e))
+  }
+}
+
+async function rejectTransfer(row) {
+  const reason = await ui.ask({
+    title: `رفض استلام عهدة ${row.number}`,
+    message: `سيتم رفض استلام مبلغ ${money(row.amount)} من ${row.from.name} وإلغاء حجز المبلغ من حسابه.`,
+    confirmText: 'رفض الاستلام',
+    danger: true,
+    reason: true,
+    icon: 'cancel',
+  })
+  if (reason === false) return
+  try {
+    const { data } = await api.post(`/transfers/${row.id}/reject`, { reason })
+    ui.success(data.message)
+    ui.changed()
+    meta.load(true)
+    load()
+  } catch (e) {
+    ui.error(errorMessage(e))
+  }
+}
+
+async function cancelTransfer(row) {
+  const reason = await ui.ask({
+    title: `إلغاء أمر تحويل عهدة ${row.number}`,
+    message: `سيتم إلغاء تحويل مبلغ ${money(row.amount)} لـ ${row.to.name} وفك الحجز عن رصيدك.`,
+    confirmText: 'إلغاء التحويل',
+    danger: true,
+    reason: true,
+    icon: 'block',
+  })
+  if (reason === false) return
+  try {
+    const { data } = await api.post(`/transfers/${row.id}/cancel`, { reason })
+    ui.success(data.message)
+    ui.changed()
+    meta.load(true)
+    load()
+  } catch (e) {
+    ui.error(errorMessage(e))
   }
 }
 
@@ -111,6 +174,7 @@ async function reverse(row) {
 
 const columns = [
   { key: 'number', label: 'الرقم' },
+  { key: 'status', label: 'الحالة' },
   { key: 'date', label: 'التاريخ' },
   { key: 'from', label: 'من' },
   { key: 'to', label: 'إلى' },
@@ -122,7 +186,16 @@ const columns = [
 
 <template>
   <div>
-    <PageHeader title="تسليم فلوس بين الأشخاص" subtitle="نقل عهدة من شخص لشخص — الرصيد بيتخصم من الأول ويتضاف للتاني فورًا" />
+    <PageHeader title="تسليم فلوس بين الأشخاص" subtitle="نقل عهدة من شخص لشخص — بيتخصم المبلغ من رصيد الراسل كحجز، وبيتضاف للمستلم فور موافقته على الاستلام" />
+
+    <!-- تنبيه للعهد المعلقة بانتظار استلام المستخدم -->
+    <div v-if="pendingForMe.length" class="mb-6 flex items-start gap-3 rounded-2xl border border-pending-border bg-pending-bg p-4 text-pending-text shadow-sm">
+      <span class="material-symbols-outlined text-[24px]">schedule</span>
+      <div class="flex-1">
+        <p class="font-bold">لديك {{ pendingForMe.length }} {{ pendingForMe.length === 1 ? 'عهدة معلقة بانتظار استلامك' : 'عهد معلقة بانتظار استلامك' }}</p>
+        <p class="text-body-sm opacity-90">يجب عليك تأكيد استلام المبلغ يدويًا ليتم ترحيله وإضافته إلى رصيدك في الدفتر.</p>
+      </div>
+    </div>
 
     <div class="grid gap-6 xl:grid-cols-12">
       <form v-if="auth.can('transfers.create')" class="card space-y-5 border border-line p-4 sm:p-5 xl:col-span-7" @submit.prevent="submit">
@@ -141,7 +214,7 @@ const columns = [
         </div>
         <button type="submit" class="btn btn-primary btn-lg w-full" :disabled="saving">
           <span class="material-symbols-outlined">swap_horiz</span>
-          تسليم {{ amount ? money(amount) : 'الفلوس' }}
+          إرسال {{ amount ? money(amount) : 'العهدة' }} للمستلم
         </button>
       </form>
 
@@ -149,7 +222,7 @@ const columns = [
       <aside class="space-y-3 xl:col-span-5">
         <h2 class="flex items-center gap-2 text-headline-sm font-bold">
           <span class="material-symbols-outlined text-primary-container">preview</span>
-          الأرصدة بعد التسليم
+          الأرصدة بعد تأكيد الاستلام
         </h2>
         <div v-for="side in [{ p: from, sign: -1, label: 'هيسلّم' }, { p: to, sign: 1, label: 'هيستلم' }]" :key="side.label" class="card border border-line p-4">
           <template v-if="side.p">
@@ -164,7 +237,7 @@ const columns = [
               </div>
               <span class="material-symbols-outlined text-on-surface-variant">arrow_back</span>
               <div class="flex-1 rounded-lg p-2" :class="side.sign < 0 ? 'bg-outflow-bg/60' : 'bg-inflow-bg/60'">
-                <p class="text-label-sm text-on-surface-variant">بعد التسليم</p>
+                <p class="text-label-sm text-on-surface-variant">بعد الاستلام</p>
                 <MoneyAmount :value="Number(side.p.balance) + side.sign * amount" size="sm" :tone="Number(side.p.balance) + side.sign * amount < 0 ? 'out' : side.sign < 0 ? 'plain' : 'in'" />
               </div>
             </div>
@@ -174,33 +247,85 @@ const columns = [
         <p v-if="over" class="flex items-start gap-2 rounded-lg border border-outflow-border bg-outflow-bg p-3 font-bold text-outflow-text">
           <span class="material-symbols-outlined">warning</span>المبلغ أكبر من المتاح مع {{ from.name }}.
         </p>
+        <p class="rounded-lg bg-surface-container-low p-3 text-body-sm text-on-surface-variant">
+          <span class="font-bold text-on-surface">ملاحظة:</span> عند إرسال العهدة، يُحجز المبلغ من رصيد الراسل ولا يُضاف لحساب المستلم حتى يوافق على استلام المبلغ.
+        </p>
       </aside>
     </div>
 
     <h2 class="mb-3 mt-8 text-headline-sm font-bold">آخر التحويلات</h2>
-    <DataTable :columns="columns" :rows="rows" :loading="loading" :row-class="(r) => (r.is_reversed ? 'opacity-60' : '')">
+    <DataTable :columns="columns" :rows="rows" :loading="loading" :row-class="(r) => (r.is_reversed || r.status === 'rejected' || r.status === 'cancelled' ? 'opacity-60' : '')">
       <template #cell-number="{ row }">
         <span class="font-bold text-tertiary" dir="ltr">{{ row.number }}</span>
-        <StatusBadge v-if="row.is_reversed" status="reversed" class="mr-2" />
+      </template>
+      <template #cell-status="{ row }">
+        <StatusBadge v-if="row.is_reversed" status="reversed" />
+        <StatusBadge v-else-if="row.status === 'pending'" status="transfer_pending" />
+        <StatusBadge v-else-if="row.status === 'completed'" status="completed" />
+        <StatusBadge v-else-if="row.status === 'rejected'" status="rejected" :label="row.rejection_reason ? `مرفوض: ${row.rejection_reason}` : 'مرفوض'" />
+        <StatusBadge v-else-if="row.status === 'cancelled'" status="cancelled" :label="row.cancellation_reason ? `مُلغى: ${row.cancellation_reason}` : 'مُلغى'" />
       </template>
       <template #cell-date="{ row }">{{ date(row.date) }}</template>
       <template #cell-from="{ row }">{{ row.from.name }}</template>
       <template #cell-to="{ row }">{{ row.to.name }}</template>
-      <template #cell-notes="{ row }"><span class="text-body-sm text-on-surface-variant">{{ row.notes || '—' }}</span></template>
-      <template #cell-amount="{ row }"><MoneyAmount :value="row.amount" size="sm" :class="{ 'line-through': row.is_reversed }" /></template>
+      <template #cell-notes="{ row }">
+        <span class="text-body-sm text-on-surface-variant">{{ row.notes || '—' }}</span>
+        <span v-if="row.received_by" class="block text-label-sm text-on-surface-variant">استلمها: {{ row.received_by }}</span>
+      </template>
+      <template #cell-amount="{ row }">
+        <MoneyAmount :value="row.amount" size="sm" :class="{ 'line-through': row.is_reversed || row.status === 'rejected' || row.status === 'cancelled' }" />
+      </template>
       <template #cell-actions="{ row }">
-        <button v-if="auth.can('entries.reverse') && !row.is_reversed" class="btn btn-ghost min-h-[40px] px-2 text-error" title="إلغاء بقيد عكسي" aria-label="إلغاء بقيد عكسي" @click="reverse(row)">
-          <span class="material-symbols-outlined">undo</span>
-        </button>
+        <div class="flex items-center justify-end gap-1">
+          <button v-if="row.can_accept" class="btn btn-primary min-h-[34px] px-2.5 py-1 text-label-md" title="تأكيد الاستلام" @click="acceptTransfer(row)">
+            <span class="material-symbols-outlined text-[18px]">check</span>
+            استلام
+          </button>
+          <button v-if="row.can_reject" class="btn btn-ghost min-h-[34px] px-2 text-error" title="رفض الاستلام" @click="rejectTransfer(row)">
+            <span class="material-symbols-outlined text-[18px]">close</span>
+          </button>
+          <button v-if="row.can_cancel" class="btn btn-ghost min-h-[34px] px-2 text-on-surface-variant" title="إلغاء التحويل" @click="cancelTransfer(row)">
+            <span class="material-symbols-outlined text-[18px]">block</span>
+          </button>
+          <button v-if="auth.can('entries.reverse') && row.status === 'completed' && !row.is_reversed" class="btn btn-ghost min-h-[34px] px-2 text-error" title="إلغاء بقيد عكسي" aria-label="إلغاء بقيد عكسي" @click="reverse(row)">
+            <span class="material-symbols-outlined text-[18px]">undo</span>
+          </button>
+        </div>
       </template>
       <template #card="{ row }">
-        <div class="flex items-center justify-between gap-3">
-          <div>
-            <p class="font-bold">{{ row.from.name }} <span class="material-symbols-outlined align-middle text-[18px] text-on-surface-variant">arrow_back</span> {{ row.to.name }}</p>
-            <p class="text-body-sm text-on-surface-variant">{{ shortDate(row.date) }} · {{ row.notes || row.number }}</p>
-            <StatusBadge v-if="row.is_reversed" status="reversed" class="mt-1" />
+        <div class="space-y-2">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <p class="font-bold">{{ row.from.name }} <span class="material-symbols-outlined align-middle text-[18px] text-on-surface-variant">arrow_back</span> {{ row.to.name }}</p>
+              <p class="text-body-sm text-on-surface-variant">{{ shortDate(row.date) }} · {{ row.notes || row.number }}</p>
+              <div class="mt-1 flex flex-wrap gap-1">
+                <StatusBadge v-if="row.is_reversed" status="reversed" />
+                <StatusBadge v-else-if="row.status === 'pending'" status="transfer_pending" />
+                <StatusBadge v-else-if="row.status === 'completed'" status="completed" />
+                <StatusBadge v-else-if="row.status === 'rejected'" status="rejected" />
+                <StatusBadge v-else-if="row.status === 'cancelled'" status="cancelled" />
+              </div>
+            </div>
+            <MoneyAmount :value="row.amount" size="sm" :class="{ 'line-through': row.is_reversed || row.status === 'rejected' || row.status === 'cancelled' }" />
           </div>
-          <MoneyAmount :value="row.amount" size="sm" :class="{ 'line-through': row.is_reversed }" />
+          <div v-if="row.can_accept || row.can_reject || row.can_cancel || (auth.can('entries.reverse') && row.status === 'completed' && !row.is_reversed)" class="flex items-center justify-end gap-2 border-t border-line/60 pt-2">
+            <button v-if="row.can_accept" class="btn btn-primary min-h-[32px] px-3 text-label-md" @click="acceptTransfer(row)">
+              <span class="material-symbols-outlined text-[18px]">check</span>
+              تأكيد الاستلام
+            </button>
+            <button v-if="row.can_reject" class="btn btn-ghost min-h-[32px] px-2 text-error" @click="rejectTransfer(row)">
+              <span class="material-symbols-outlined text-[18px]">close</span>
+              رفض
+            </button>
+            <button v-if="row.can_cancel" class="btn btn-ghost min-h-[32px] px-2 text-on-surface-variant" @click="cancelTransfer(row)">
+              <span class="material-symbols-outlined text-[18px]">block</span>
+              إلغاء
+            </button>
+            <button v-if="auth.can('entries.reverse') && row.status === 'completed' && !row.is_reversed" class="btn btn-ghost min-h-[32px] px-2 text-error" @click="reverse(row)">
+              <span class="material-symbols-outlined text-[18px]">undo</span>
+              قيد عكسي
+            </button>
+          </div>
         </div>
       </template>
       <template #empty><EmptyState icon="swap_horiz" title="مفيش تحويلات لسه" /></template>

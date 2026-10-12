@@ -119,7 +119,15 @@ class ExpenseFlowTest extends FinanceTestCase
         $transfers = app(TransferService::class);
         $ledger = app(LedgerService::class);
 
-        $transfers->create(['from_custodian_id' => $this->sayed->id, 'to_custodian_id' => $this->mahmoud->id, 'amount' => 400, 'date' => now()->toDateString()], $this->treasurer);
+        $transfer = $transfers->create(['from_custodian_id' => $this->sayed->id, 'to_custodian_id' => $this->mahmoud->id, 'amount' => 400, 'date' => now()->toDateString()], $this->treasurer);
+
+        // قبل التأكيد: المبلغ محجوز من الراسل، ولم يصل لحساب المستلم بعد
+        $this->assertSame(100000, $ledger->balanceCents($this->sayed->id));
+        $this->assertSame(60000, $ledger->availableCents($this->sayed->id));
+        $this->assertSame(0, $ledger->balanceCents($this->mahmoud->id));
+
+        // المستلم (الحاج محمود، مستخدمه أمين الصندوق) يؤكد الاستلام
+        $transfers->accept($transfer, $this->treasurer);
 
         $this->assertSame(60000, $ledger->balanceCents($this->sayed->id));
         $this->assertSame(40000, $ledger->balanceCents($this->mahmoud->id));

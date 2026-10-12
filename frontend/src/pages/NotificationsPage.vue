@@ -23,6 +23,10 @@ const icons = {
   approved: ['verified', 'bg-inflow-bg text-inflow-text'],
   rejected: ['cancel', 'bg-outflow-bg text-outflow-text'],
   returned: ['undo', 'bg-tertiary-fixed text-on-tertiary-fixed-variant'],
+  transfer_pending: ['schedule', 'bg-pending-bg text-pending-text'],
+  transfer_accepted: ['task_alt', 'bg-inflow-bg text-inflow-text'],
+  transfer_rejected: ['cancel', 'bg-outflow-bg text-outflow-text'],
+  transfer_cancelled: ['block', 'bg-surface-container text-on-surface-variant'],
 }
 
 async function load(more = false) {
@@ -46,6 +50,7 @@ async function open(n) {
     api.post(`/notifications/${n.id}/read`).then(({ data }) => auth.user && (auth.user.unread_notifications = data.unread)).catch(() => {})
   }
   if (n.expense_request_id) router.push({ path: '/requests', query: { id: n.expense_request_id, status: n.status } })
+  else if (n.transfer_id) router.push({ path: '/transfers' })
 }
 
 async function readAll() {

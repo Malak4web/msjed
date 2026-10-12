@@ -67,6 +67,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // تسليم فلوس بين الأشخاص
     Route::get('transfers', [TransferController::class, 'index']);
     Route::post('transfers', [TransferController::class, 'store'])->middleware('can:transfers.create');
+    Route::post('transfers/{transfer}/accept', [TransferController::class, 'accept']);
+    Route::post('transfers/{transfer}/reject', [TransferController::class, 'reject']);
+    Route::post('transfers/{transfer}/cancel', [TransferController::class, 'cancel']);
     Route::post('transfers/{transfer}/reverse', [TransferController::class, 'reverse'])->middleware('can:entries.reverse');
 
     // المصروفات الثابتة
