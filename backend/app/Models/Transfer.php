@@ -29,6 +29,7 @@ class Transfer extends Model
         'from_custodian_id',
         'to_custodian_id',
         'amount',
+        'payment_method_id',
         'status',
         'notes',
         'created_by',
@@ -62,6 +63,11 @@ class Transfer extends Model
     public function to(): BelongsTo
     {
         return $this->belongsTo(Custodian::class, 'to_custodian_id');
+    }
+
+    public function paymentMethod(): BelongsTo
+    {
+        return $this->belongsTo(PaymentMethod::class, 'payment_method_id');
     }
 
     public function creator(): BelongsTo

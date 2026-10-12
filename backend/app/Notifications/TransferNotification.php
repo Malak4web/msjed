@@ -34,10 +34,12 @@ class TransferNotification extends Notification
     public function toArray(object $notifiable): array
     {
         [$title, $bodyTemplate] = self::MESSAGES[$this->event] ?? ['إشعار عهدة', '%s'];
-        $transfer = $this->transfer->loadMissing('from', 'to');
+        $transfer = $this->transfer->loadMissing('from', 'to', 'paymentMethod');
+        $method = $transfer->paymentMethod?->name;
+        $via = $method ? " عبر ({$method})" : '';
 
         $body = match ($this->event) {
-            'pending' => sprintf($bodyTemplate, $transfer->from->name, Money::format($transfer->amount)),
+            'pending' => sprintf($bodyTemplate, $transfer->from->name, Money::format($transfer->amount)).$via,
             'accepted' => sprintf($bodyTemplate, $transfer->to->name, Money::format($transfer->amount)),
             'rejected' => sprintf($bodyTemplate, $transfer->to->name, Money::format($transfer->amount)),
             'cancelled' => sprintf($bodyTemplate, Money::format($transfer->amount), $transfer->from->name),

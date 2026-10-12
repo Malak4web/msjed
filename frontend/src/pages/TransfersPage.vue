@@ -26,7 +26,25 @@ const page = ref(1)
 const loading = ref(true)
 const saving = ref(false)
 const errors = ref({})
-const form = reactive({ from_custodian_id: auth.user?.custodian?.id ?? null, to_custodian_id: null, amount: '', date: today(), notes: '' })
+const form = reactive({
+  from_custodian_id: auth.user?.custodian?.id ?? null,
+  to_custodian_id: null,
+  payment_method_id: null,
+  amount: '',
+  date: today(),
+  notes: '',
+})
+
+watch(
+  () => meta.payment_methods,
+  (methods) => {
+    if (!form.payment_method_id && methods && methods.length) {
+      const cash = methods.find((m) => m.name === 'كاش')
+      form.payment_method_id = cash ? cash.id : methods[0].id
+    }
+  },
+  { immediate: true }
+)
 
 async function load() {
   loading.value = true
@@ -41,7 +59,11 @@ async function load() {
     loading.value = false
   }
 }
-onMounted(load)
+
+onMounted(() => {
+  meta.load()
+  load()
+})
 watch(page, load)
 
 const pendingForMe = computed(() => rows.value.filter((r) => r.can_accept))
@@ -62,14 +84,18 @@ async function submit() {
   const e = {}
   if (!form.from_custodian_id) e.from_custodian_id = 'اختار مين هيسلّم.'
   if (!form.to_custodian_id) e.to_custodian_id = 'اختار مين هيستلم.'
+  if (!form.payment_method_id) e.payment_method_id = 'اختار طريقة التسليم.'
   if (!(amount.value > 0)) e.amount = 'اكتب المبلغ.'
   else if (over.value) e.amount = `${from.value.name} معاه ${money(from.value.available)} متاح بس.`
   errors.value = e
   if (Object.keys(e).length) return
 
+  const pm = meta.payment_methods.find((m) => m.id === form.payment_method_id)
+  const methodText = pm ? ` بطريقة (${pm.name})` : ''
+
   const ok = await ui.ask({
     title: 'تأكيد إرسال العهدة',
-    message: `هيتم حجز ${money(amount.value)} من رصيد ${from.value.name} ومش هيتضاف لـ ${to.value.name} إلا بعد موافقته على استلام العهدة.`,
+    message: `هيتم حجز ${money(amount.value)} من رصيد ${from.value.name} وتسليمها لـ ${to.value.name}${methodText} — ومش هتتضاف لرصيده إلا بعد موافقته على استلام العهدة.`,
     confirmText: 'إرسال للمستلم',
     icon: 'swap_horiz',
   })
@@ -93,9 +119,10 @@ async function submit() {
 }
 
 async function acceptTransfer(row) {
+  const methodText = row.payment_method ? ` بطريقة (${row.payment_method.name})` : ''
   const ok = await ui.ask({
     title: `تأكيد استلام عهدة ${row.number}`,
-    message: `هل استلمت بالفعل مبلغ ${money(row.amount)} من ${row.from.name}؟ هيتم إضافة المبلغ لرصيدك فورًا.`,
+    message: `هل استلمت بالفعل مبلغ ${money(row.amount)} من ${row.from.name}${methodText}؟ هيتم إضافة المبلغ لرصيدك فورًا.`,
     confirmText: 'تأكيد الاستلام',
     icon: 'task_alt',
   })
@@ -178,6 +205,7 @@ const columns = [
   { key: 'date', label: 'التاريخ' },
   { key: 'from', label: 'من' },
   { key: 'to', label: 'إلى' },
+  { key: 'method', label: 'طريقة التسليم' },
   { key: 'notes', label: 'ملاحظات' },
   { key: 'amount', label: 'المبلغ', align: 'end' },
   { key: 'actions', label: '' },
@@ -201,6 +229,7 @@ const columns = [
       <form v-if="auth.can('transfers.create')" class="card space-y-5 border border-line p-4 sm:p-5 xl:col-span-7" @submit.prevent="submit">
         <TileSelect v-model="form.from_custodian_id" label="مين هيسلّم الفلوس؟" :options="fromOptions" columns="grid-cols-2" :error="errors.from_custodian_id" />
         <TileSelect v-model="form.to_custodian_id" label="لمين؟" :options="toOptions" columns="grid-cols-2 sm:grid-cols-3" :error="errors.to_custodian_id" />
+        <TileSelect v-if="meta.payment_methods.length" v-model="form.payment_method_id" label="طريقة التسليم" :options="meta.payment_methods" columns="grid-cols-2 sm:grid-cols-3 xl:grid-cols-5" :error="errors.payment_method_id" />
         <AmountInput v-model="form.amount" :error="errors.amount" :presets="[500, 1000, 2000, 5000]" />
         <div class="grid gap-4 sm:grid-cols-2">
           <div>
@@ -268,6 +297,13 @@ const columns = [
       <template #cell-date="{ row }">{{ date(row.date) }}</template>
       <template #cell-from="{ row }">{{ row.from.name }}</template>
       <template #cell-to="{ row }">{{ row.to.name }}</template>
+      <template #cell-method="{ row }">
+        <span v-if="row.payment_method" class="inline-flex items-center gap-1.5 text-body-sm font-medium">
+          <span v-if="row.payment_method.icon" class="material-symbols-outlined text-[18px] text-primary">{{ row.payment_method.icon }}</span>
+          <span>{{ row.payment_method.name }}</span>
+        </span>
+        <span v-else class="text-body-sm text-on-surface-variant">—</span>
+      </template>
       <template #cell-notes="{ row }">
         <span class="text-body-sm text-on-surface-variant">{{ row.notes || '—' }}</span>
         <span v-if="row.received_by" class="block text-label-sm text-on-surface-variant">استلمها: {{ row.received_by }}</span>
@@ -297,7 +333,11 @@ const columns = [
           <div class="flex items-start justify-between gap-3">
             <div>
               <p class="font-bold">{{ row.from.name }} <span class="material-symbols-outlined align-middle text-[18px] text-on-surface-variant">arrow_back</span> {{ row.to.name }}</p>
-              <p class="text-body-sm text-on-surface-variant">{{ shortDate(row.date) }} · {{ row.notes || row.number }}</p>
+              <p class="text-body-sm text-on-surface-variant">
+                {{ shortDate(row.date) }}
+                <span v-if="row.payment_method"> · {{ row.payment_method.name }}</span>
+                · {{ row.notes || row.number }}
+              </p>
               <div class="mt-1 flex flex-wrap gap-1">
                 <StatusBadge v-if="row.is_reversed" status="reversed" />
                 <StatusBadge v-else-if="row.status === 'pending'" status="transfer_pending" />

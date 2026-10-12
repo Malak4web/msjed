@@ -26,8 +26,10 @@ class TransferController extends Controller
             'receiver:id,name',
             'rejecter:id,name',
             'canceller:id,name',
+            'paymentMethod:id,name,icon',
         ])
             ->when($request->integer('custodian_id'), fn ($q, $v) => $q->where(fn ($w) => $w->where('from_custodian_id', $v)->orWhere('to_custodian_id', $v)))
+            ->when($request->integer('payment_method_id'), fn ($q, $v) => $q->where('payment_method_id', $v))
             ->when($request->input('status'), fn ($q, $s) => $q->where('status', $s))
             ->orderByDesc('date')->orderByDesc('id')
             ->paginate($request->integer('per_page', 15));
@@ -45,6 +47,7 @@ class TransferController extends Controller
             'to_custodian_id' => ['required', 'exists:custodians,id', 'different:from_custodian_id'],
             'amount' => ['required', 'numeric', 'gt:0', 'decimal:0,2'],
             'date' => ['required', 'date', 'before_or_equal:today'],
+            'payment_method_id' => ['nullable', 'exists:payment_methods,id'],
             'notes' => ['nullable', 'string', 'max:500'],
         ], [
             'to_custodian_id.different' => 'مينفعش تسلّم فلوس لنفس الشخص.',
@@ -52,7 +55,7 @@ class TransferController extends Controller
         ]);
 
         $transfer = $this->transfers->create($data, $request->user());
-        $transfer->load('from', 'to', 'creator');
+        $transfer->load('from', 'to', 'creator', 'paymentMethod');
 
         return response()->json([
             'message' => "تم إرسال أمر تسليم الفلوس وبانتظار تأكيد استلام {$transfer->to->name}",
@@ -63,7 +66,7 @@ class TransferController extends Controller
     public function accept(Request $request, Transfer $transfer): JsonResponse
     {
         $transfer = $this->transfers->accept($transfer, $request->user());
-        $transfer->load('from', 'to', 'creator', 'receiver');
+        $transfer->load('from', 'to', 'creator', 'receiver', 'paymentMethod');
 
         return response()->json([
             'message' => "تم تأكيد استلام العهدة وإضافتها لرصيد {$transfer->to->name}",
@@ -78,7 +81,7 @@ class TransferController extends Controller
         ]);
 
         $transfer = $this->transfers->reject($transfer, $data['reason'] ?? null, $request->user());
-        $transfer->load('from', 'to', 'creator', 'rejecter');
+        $transfer->load('from', 'to', 'creator', 'rejecter', 'paymentMethod');
 
         return response()->json([
             'message' => 'تم رفض استلام العهدة وإلغاء حجز المبلغ',
@@ -93,7 +96,7 @@ class TransferController extends Controller
         ]);
 
         $transfer = $this->transfers->cancel($transfer, $data['reason'] ?? null, $request->user());
-        $transfer->load('from', 'to', 'creator', 'canceller');
+        $transfer->load('from', 'to', 'creator', 'canceller', 'paymentMethod');
 
         return response()->json([
             'message' => 'تم إلغاء أمر تسليم العهدة وإلغاء الحجز',
@@ -104,7 +107,7 @@ class TransferController extends Controller
     public function reverse(ReasonRequest $request, Transfer $transfer): JsonResponse
     {
         $transfer = $this->transfers->reverse($transfer, $request->validated('reason'), $request->user());
-        $transfer->load('from', 'to', 'creator', 'reverser');
+        $transfer->load('from', 'to', 'creator', 'reverser', 'paymentMethod');
 
         return response()->json([
             'message' => 'تم إلغاء التسليم بقيد عكسي',
@@ -136,6 +139,11 @@ class TransferController extends Controller
             'amount' => $t->amount,
             'status' => $t->status,
             'status_label' => Transfer::STATUS_LABELS[$t->status] ?? $t->status,
+            'payment_method' => $t->paymentMethod ? [
+                'id' => $t->paymentMethod->id,
+                'name' => $t->paymentMethod->name,
+                'icon' => $t->paymentMethod->icon,
+            ] : null,
             'from' => ['id' => $t->from->id, 'name' => $t->from->name],
             'to' => ['id' => $t->to->id, 'name' => $t->to->name],
             'notes' => $t->notes,

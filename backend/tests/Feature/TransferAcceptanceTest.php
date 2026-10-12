@@ -172,4 +172,28 @@ class TransferAcceptanceTest extends FinanceTestCase
             'reason' => 'قيد عكسي',
         ])->assertStatus(422);
     }
+
+    public function test_transfer_with_payment_method(): void
+    {
+        $instapay = \App\Models\PaymentMethod::firstOrCreate(['name' => 'إنستاباي'], ['icon' => 'bolt', 'sort' => 2]);
+
+        $res = $this->actingAsUser($this->treasurer)->postJson('/api/transfers', [
+            'from_custodian_id' => $this->fromC->id,
+            'to_custodian_id' => $this->toC->id,
+            'amount' => 150,
+            'payment_method_id' => $instapay->id,
+            'date' => now()->toDateString(),
+        ])->assertCreated();
+
+        $res->assertJsonPath('data.payment_method.id', $instapay->id)
+            ->assertJsonPath('data.payment_method.name', 'إنستاباي');
+
+        $transferId = $res->json('data.id');
+        $this->actingAsUser($this->recipientUser)->postJson("/api/transfers/{$transferId}/accept")
+            ->assertOk()
+            ->assertJsonPath('data.payment_method.name', 'إنستاباي');
+
+        $outEntry = LedgerEntry::where('type', LedgerEntry::TRANSFER_OUT)->first();
+        $this->assertStringContainsString('إنستاباي', $outEntry->description);
+    }
 }

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Exceptions\BusinessRuleException;
 use App\Models\Custodian;
 use App\Models\LedgerEntry;
+use App\Models\PaymentMethod;
 use App\Models\Transfer;
 use App\Models\User;
 use App\Notifications\TransferNotification;
@@ -28,7 +29,9 @@ class TransferService
 
         $this->periods->assertOpen($data['date']);
 
-        $transfer = DB::transaction(function () use ($data, $user) {
+        $paymentMethodId = $data['payment_method_id'] ?? PaymentMethod::where('name', 'كاش')->value('id') ?? PaymentMethod::value('id');
+
+        $transfer = DB::transaction(function () use ($data, $user, $paymentMethodId) {
             $locked = $this->ledger->lockCustodians([$data['from_custodian_id'], $data['to_custodian_id']]);
             $from = $locked[(int) $data['from_custodian_id']];
             $to = $locked[(int) $data['to_custodian_id']];
@@ -42,6 +45,7 @@ class TransferService
                 'from_custodian_id' => $from->id,
                 'to_custodian_id' => $to->id,
                 'amount' => Money::decimal($amount),
+                'payment_method_id' => $paymentMethodId,
                 'status' => Transfer::STATUS_PENDING,
                 'notes' => $data['notes'] ?? null,
                 'created_by' => $user->id,
@@ -94,8 +98,12 @@ class TransferService
                 throw new BusinessRuleException("رصيد {$from->name} غير كافي لإتمام التسليم.");
             }
 
-            $this->ledger->post($from, LedgerEntry::TRANSFER_OUT, -$amount, $transfer->date->toDateString(), "تسليم فلوس إلى {$to->name}", $transfer, $user->id);
-            $this->ledger->post($to, LedgerEntry::TRANSFER_IN, $amount, $transfer->date->toDateString(), "استلام فلوس من {$from->name}", $transfer, $user->id);
+            $transfer->loadMissing('paymentMethod');
+            $methodName = $transfer->paymentMethod?->name;
+            $suffix = $methodName ? " ({$methodName})" : '';
+
+            $this->ledger->post($from, LedgerEntry::TRANSFER_OUT, -$amount, $transfer->date->toDateString(), "تسليم فلوس إلى {$to->name}{$suffix}", $transfer, $user->id);
+            $this->ledger->post($to, LedgerEntry::TRANSFER_IN, $amount, $transfer->date->toDateString(), "استلام فلوس من {$from->name}{$suffix}", $transfer, $user->id);
 
             $transfer->forceFill([
                 'status' => Transfer::STATUS_COMPLETED,
